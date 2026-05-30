@@ -1,7 +1,8 @@
 import '../interfaces/displayable.dart';
+import '../interfaces/serializable.dart';
 import 'priority.dart';
 
-abstract class Task implements Displayable {
+abstract class Task implements Displayable, Serializable {
   final String id;
   String title;
   Priority priority;

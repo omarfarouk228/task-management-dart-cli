@@ -36,10 +36,19 @@ class CliRunner {
       ..addFlag('all', abbr: 'a', negatable: false,
           help: 'Include completed tasks');
 
+    final updateCmd = ArgParser()
+      ..addOption('title', abbr: 't', help: 'New task title')
+      ..addOption('priority', abbr: 'p',
+          allowed: ['low', 'medium', 'high'],
+          help: 'New priority (RegularTask only)')
+      ..addOption('deadline', abbr: 'd', help: 'New due date (YYYY-MM-DD)')
+      ..addOption('note', abbr: 'n', help: 'New urgency note (UrgentTask only)');
+
     root
       ..addCommand('add', addCmd)
       ..addCommand('list', listCmd)
       ..addCommand('done', ArgParser())
+      ..addCommand('update', updateCmd)
       ..addCommand('delete', ArgParser())
       ..addFlag('help', abbr: 'h', negatable: false);
 
@@ -80,6 +89,8 @@ class CliRunner {
           await _list(cmd);
         case 'done':
           await _done(cmd);
+        case 'update':
+          await _update(cmd);
         case 'delete':
           await _delete(cmd);
         default:
@@ -185,6 +196,59 @@ class CliRunner {
     print('Deleted: "${task.title}"');
   }
 
+  Future<void> _update(ArgResults args) async {
+    if (args.rest.isEmpty) {
+      stderr.writeln(
+          'Usage: update <id> [-t "title"] [-p low|medium|high] [-d YYYY-MM-DD] [-n "note"]');
+      exit(1);
+    }
+
+    final id = args.rest.first;
+    final task = await _repo.getById(id);
+    if (task == null) throw TaskNotFoundException(id);
+
+    final newTitle = args['title'] as String?;
+    final priorityStr = args['priority'] as String?;
+    final deadlineStr = args['deadline'] as String?;
+    final note = args['note'] as String?;
+
+    DateTime? newDeadline = task.deadline;
+    if (deadlineStr != null) {
+      try {
+        newDeadline = DateTime.parse(deadlineStr);
+      } catch (_) {
+        stderr.writeln('Error: Invalid date "$deadlineStr" — use YYYY-MM-DD.');
+        exit(1);
+      }
+    }
+
+    final Task updated;
+    if (task is UrgentTask) {
+      updated = UrgentTask(
+        id: task.id,
+        title: newTitle ?? task.title,
+        urgencyNote: note ?? task.urgencyNote,
+        deadline: newDeadline,
+        isDone: task.isDone,
+        createdAt: task.createdAt,
+      );
+    } else {
+      updated = RegularTask(
+        id: task.id,
+        title: newTitle ?? task.title,
+        priority: priorityStr != null
+            ? Priority.fromString(priorityStr)
+            : task.priority,
+        deadline: newDeadline,
+        isDone: task.isDone,
+        createdAt: task.createdAt,
+      );
+    }
+
+    await _repo.update(updated);
+    print('Updated: [${updated.id}] "${updated.title}" (${updated.priority.name})');
+  }
+
   String _generateId() {
     final rng = Random();
     return (rng.nextInt(900000) + 100000).toString(); // 100000–999999
@@ -205,6 +269,13 @@ Usage:
     -a, --all               Include completed tasks
 
   done <id>                 Mark a task as done
+
+  update <id> [options]     Update task fields
+    -t, --title             New title
+    -p, --priority          low | medium | high
+    -d, --deadline          YYYY-MM-DD
+    -n, --note              New urgency note (UrgentTask only)
+
   delete <id>               Remove a task
 
   -h, --help                Show this help
@@ -215,6 +286,7 @@ Examples:
   dart run bin/main.dart list
   dart run bin/main.dart list --sort date --all
   dart run bin/main.dart done 452731
+  dart run bin/main.dart update 452731 --title "Fixed login bug" -p medium
   dart run bin/main.dart delete 452731
 ''');
   }
