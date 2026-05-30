@@ -1,0 +1,13 @@
+name: dart_task_cli
+description: A CLI task manager built in pure Dart.
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  args: ^2.4.0
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0
