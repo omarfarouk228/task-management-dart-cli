@@ -122,6 +122,3 @@ bin/
 
 Tasks are persisted to `~/.dart_task_manager.json` as a JSON array. The `type` field distinguishes `RegularTask` from `UrgentTask` during deserialization.
 
-## CI/CD
-
-GitHub Actions runs `dart analyze` and `dart test` on every push and pull request to `main`. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).

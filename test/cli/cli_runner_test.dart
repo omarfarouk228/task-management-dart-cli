@@ -91,5 +91,15 @@ void main() {
       await runner.run(['add', 'Task B', '-p', 'high']);
       expect((await repo.getAll()).length, 2);
     });
+
+    test('update promotes RegularTask to UrgentTask when note is added', () async {
+      await runner.run(['add', 'Normal task', '-p', 'low']);
+      final id = (await repo.getAll()).first.id;
+      await runner.run(['update', id, '--note', 'Server is on fire']);
+      final updated = await repo.getById(id);
+      expect(updated, isA<UrgentTask>());
+      expect((updated as UrgentTask).urgencyNote, 'Server is on fire');
+      expect(updated.priority, Priority.high);
+    });
   });
 }

@@ -224,10 +224,23 @@ class CliRunner {
 
     final Task updated;
     if (task is UrgentTask) {
+      if (priorityStr != null) {
+        stderr.writeln('Warning: UrgentTask priority is always high — --priority flag ignored.');
+      }
       updated = UrgentTask(
         id: task.id,
         title: newTitle ?? task.title,
         urgencyNote: note ?? task.urgencyNote,
+        deadline: newDeadline,
+        isDone: task.isDone,
+        createdAt: task.createdAt,
+      );
+    } else if (note != null) {
+      // RegularTask promoted to UrgentTask when a note is provided.
+      updated = UrgentTask(
+        id: task.id,
+        title: newTitle ?? task.title,
+        urgencyNote: note,
         deadline: newDeadline,
         isDone: task.isDone,
         createdAt: task.createdAt,
